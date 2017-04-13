@@ -12,6 +12,7 @@ namespace OSGTools
     {
         private static Logger log = LogManager.GetCurrentClassLogger();
 
+        #region **** db variables ****
         private static string server;
         public static string Server { get { return server; } }
 
@@ -29,6 +30,7 @@ namespace OSGTools
 
         private static MySqlConnection connection = null;
         public static MySqlConnection Connection { get { return connection; } }
+        #endregion
 
         public static bool Connect()
         {
@@ -265,14 +267,14 @@ namespace OSGTools
         }
 
         // вставка записи только с логиным подписки
-        public static bool insertFollowing(string login)
+        public static bool insertFollowing(int instagram, string login)
         {
             bool result = true;
 
             try
             {
                 Connect();
-                string cmdtext = string.Format("INSERT INTO following (login, dateadd) VALUES ('{0}', now());", login);
+                string cmdtext = string.Format("INSERT INTO following (login, dateadd) VALUES ('{0}', now()); INSERT INTO instagram_following (login, following, datefollow) VALUES ({1}, (SELECT id FROM following WHERE login='{0}'), now());", login, instagram);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
                 cmd.ExecuteNonQuery();
                 Close();
@@ -295,7 +297,8 @@ namespace OSGTools
             Connect();
             try
             {
-                string cmdtext = string.Format("SELECT login FROM instagram WHERE website <> '' AND name <> '' AND status = 0 AND used = 0 AND ((hour(timediff(now(), useddate)) * 60 + minute(timediff(now(), useddate))) >= '{0}' OR useddate is null);", minutes);
+                //string cmdtext = string.Format("SELECT login FROM instagram WHERE website <> '' AND name <> '' AND status = 0 AND used = 0 AND ((hour(timediff(now(), useddate)) * 60 + minute(timediff(now(), useddate))) >= '{0}' OR useddate is null);", minutes);
+                string cmdtext = string.Format("SELECT login FROM instagram WHERE name <> '' AND status = 0 AND used = 0 AND ((hour(timediff(now(), useddate)) * 60 + minute(timediff(now(), useddate))) >= '{0}' OR useddate is null);", minutes);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
                 MySqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -403,6 +406,48 @@ namespace OSGTools
             {
                 Connect();
                 string cmdtext = string.Format("UPDATE instagram SET used=0, usedtask='', useddate=now() WHERE id={0};", idlogin);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                cmd.ExecuteNonQuery();
+                Close();
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        // поставить статус освобождения с указанием даты с нулевым временем
+        public static bool setFreeInstaAccount(int idlogin, bool nulltime)
+        {
+            bool result = true;
+
+            try
+            {
+                Connect();
+                string cmdtext = string.Format("UPDATE instagram SET used=0, usedtask='', useddate=date(now()) WHERE id={0};", idlogin);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                cmd.ExecuteNonQuery();
+                Close();
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        // сохранение результата выполнения задачи
+        public static bool insertInstaAccountTask(int idlogin, string task, string taskresult)
+        {
+            bool result = true;
+
+            try
+            {
+                Connect();
+                string cmdtext = string.Format("INSERT INTO instagram_tasks (idlogin, usedtask, useddate, result) VALUES ({0}, '{1}', now(), '{2}');", idlogin, task, taskresult);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
                 cmd.ExecuteNonQuery();
                 Close();

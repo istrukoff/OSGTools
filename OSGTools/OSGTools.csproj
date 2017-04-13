@@ -65,6 +65,10 @@
     <Compile Include="Functions.cs" />
     <Compile Include="InstaLogin.cs" />
     <Compile Include="InternetCheckStart.cs" />
+    <Compile Include="Objects\AvitoAd.cs" />
+    <Compile Include="Objects\AvitoAdCategory.cs" />
+    <Compile Include="Objects\AvitoAdSection.cs" />
+    <Compile Include="Objects\AvitoData.cs" />
     <Compile Include="Objects\Device.cs" />
     <Compile Include="Objects\FollowingData.cs" />
     <Compile Include="Objects\InstagramData.cs" />
