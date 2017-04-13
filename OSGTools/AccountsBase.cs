@@ -10,8 +10,6 @@ namespace OSGTools
 {
     public static class AccountsBase
     {
-        private static Logger log = LogManager.GetCurrentClassLogger();
-
         #region **** db variables ****
         private static string server;
         public static string Server { get { return server; } }
@@ -57,8 +55,43 @@ namespace OSGTools
             connection.Close();
         }
 
+        // **** **** **** **** avito **** **** **** **** //
+
+        public static List<AvitoData> getAvitoList()
+        {
+            List<AvitoData> result = new List<AvitoData>();
+
+            try
+            {
+                Connect();
+                string cmdtext = "SELECT id, name, telephone, email, password, status, used FROM avito;";
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    result.Add(new AvitoData(int.Parse(reader["id"].ToString()),
+                        reader["name"].ToString(),
+                        reader["telephone"].ToString(),
+                        reader["email"].ToString(),
+                        reader["password"].ToString(),
+                        int.Parse(reader["status"].ToString()),
+                        int.Parse(reader["used"].ToString())));
+                }
+                reader.Close();
+                Close();
+            }
+            catch { }
+
+            return result;
+        }
+
+        // **** **** добавление разделов и категорий **** **** //
+
+        // **** **** работа с объявлениями **** **** //
+
+        // **** **** **** **** instagram **** **** **** **** //
+
         // получить все записи из таблицы instagram
-        [STAThread]
         public static List<InstagramData> getInstagramList()
         {
             List<InstagramData> result = new List<InstagramData>();
@@ -83,16 +116,12 @@ namespace OSGTools
                 reader.Close();
                 Close();
             }
-            catch (Exception e)
-            {
-                log.Error(e.ToString());
-            }
+            catch { }
 
             return result;
         }
 
         // получить запись из таблицы instagram по заданному логину
-        [STAThread]
         public static InstagramData getInstagram(string login)
         {
             InstagramData result;
@@ -116,10 +145,9 @@ namespace OSGTools
             return result;
         }
 
-        // **** **** **** **** регистрация **** **** **** **** //
+        // **** **** регистрация **** **** //
 
         // проверка существования записи по логину
-        [STAThread]
         public static bool InstagramLoginExists(string login)
         {
             bool result = false;
@@ -136,7 +164,6 @@ namespace OSGTools
         }
 
         // добавление записи
-        [STAThread]
         public static bool InstagramAdd(string login, string password, string telephone, string android_id, string email, string description)
         {
             bool result = true;
@@ -161,7 +188,7 @@ namespace OSGTools
             return result;
         }
 
-        // **** **** **** **** заполнение **** **** **** **** //
+        // **** **** заполнение **** **** //
 
         // обновление записи аккаунта после заполнения
         public static bool updateInstagram(int id, string email, string website, string name, string description)
@@ -184,7 +211,7 @@ namespace OSGTools
             return result;
         }
 
-        // **** **** **** **** постинг **** **** **** **** //
+        // **** **** постинг **** **** //
 
         // запись данных о размещённом посте
         public static bool insertPost(int idlogin, string posttext, string parsedposttext)
@@ -207,7 +234,7 @@ namespace OSGTools
             return result;
         }
 
-        // **** **** **** **** подписка **** **** **** **** //
+        // **** **** подписка **** **** //
 
         // проверка существования записи о подписке
         public static bool isFollowingExists(string login)
@@ -287,7 +314,7 @@ namespace OSGTools
             return result;
         }
 
-        // **** **** **** **** общие функции **** **** **** **** //
+        // **** **** общие функции **** **** //
 
         // получить все свободные аккаунты по заданному интервалу освобождения
         public static List<string> getAllFreeInstaAccounts(int minutes)

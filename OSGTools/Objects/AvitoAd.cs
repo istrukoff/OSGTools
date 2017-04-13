@@ -4,36 +4,49 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OSGTools.Objects
+namespace OSGTools
 {
-    public static class AvitoAd
+    public class AvitoAd
     {
-        public static int id { get; set; } // идентификатор в БД
+        public AvitoAd() { }
 
-        public static int idlogin { get; set; } // идентификатор аккаунта
+        public AvitoAd(int p_id, int p_idlogin, string p_name, string p_price, string p_description, int p_status, int p_categoryid)
+        {
+            id = p_id;
+            idlogin = p_idlogin;
+            name = p_name;
+            price = p_price;
+            description = p_description;
+            status = p_status;
+            categoryid = p_categoryid;
+        }
 
-        public static string name { get; set; } // заголовок объявления
+        public int id { get; set; } // идентификатор в БД
 
-        public static string price { get; set; } // указанная цена
+        public int idlogin { get; set; } // идентификатор аккаунта
 
-        public static string description { get; set; } // описание объявления
+        public string name { get; set; } // заголовок объявления
 
-        public static int status { get; set; } // статус объявления
+        public string price { get; set; } // указанная цена
 
-        public static int categoryid { get; set; } // идентификатор категории
+        public string description { get; set; } // описание объявления
 
-        public static string city { get; set; } // указанный город
+        public int status { get; set; } // статус объявления
 
-        public static string picture { get; set; } // путь к изображениям
+        public int categoryid { get; set; } // идентификатор категории
 
-        public static string url { get; set; } // адрес объявления
+        public string city { get; set; } // указанный город
 
-        public static string date { get; set; } // дата публикации
+        public string picture { get; set; } // путь к изображениям
 
-        public static string view_count { get; set; } // количество просмотров
+        public string url { get; set; } // адрес объявления
 
-        public static string view_count_today { get; set; } // количество просмотров за день
+        public string date { get; set; } // дата публикации
 
-        public static string publish_count { get; set; } // количество публикаций объявления
+        public string view_count { get; set; } // количество просмотров
+
+        public string view_count_today { get; set; } // количество просмотров за день
+
+        public string publish_count { get; set; } // количество публикаций объявления
     }
 }

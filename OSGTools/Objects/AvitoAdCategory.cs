@@ -4,15 +4,31 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OSGTools.Objects
+namespace OSGTools
 {
-    public static class AvitoAdCategory
+    public class AvitoAdCategory
     {
-        public static int id { get; set; }
-        public static string category { get; set; }
-        public static string comment { get; set; }
-        public static DateTime lastupdate { get; set; }
-        public static int parent { get; set; }
-        public static int available { get; set; }
+        public AvitoAdCategory() { }
+
+        public AvitoAdCategory(int p_id, string p_category, string p_comment, int p_parent, int p_available)
+        {
+            id = p_id;
+            category = p_category;
+            comment = p_comment;
+            parent = p_parent;
+            available = p_available;
+        }
+
+        public int id { get; set; }
+
+        public string category { get; set; }
+
+        public string comment { get; set; }
+
+        public DateTime lastupdate { get; set; }
+
+        public int parent { get; set; }
+
+        public int available { get; set; }
     }
 }
