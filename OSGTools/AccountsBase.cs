@@ -85,6 +85,48 @@ namespace OSGTools
             return result;
         }
 
+        // получить свободные аккаунты
+        public static List<string> getAllFreeAvitoAccounts()
+        {
+            List<string> result = new List<string>();
+
+            Connect();
+            try
+            {
+                string cmdtext = string.Format("SELECT email FROM avito WHERE status=0 AND used=0;");
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    result.Add(reader["email"].ToString());
+            }
+            catch { }
+            Close();
+
+            return result;
+        }
+
+        public static AvitoData getAvito(string email)
+        {
+            AvitoData result;
+
+            Connect();
+            string cmdtext = string.Format("SELECT id, name, telephone, email, password, status, used FROM avito WHERE email='{0}';", email);
+            MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+            reader.Read();
+            result = new AvitoData(int.Parse(reader["id"].ToString()),
+                        reader["name"].ToString(),
+                        reader["telephone"].ToString(),
+                        reader["email"].ToString(),
+                        reader["password"].ToString(),
+                        int.Parse(reader["status"].ToString()),
+                        int.Parse(reader["used"].ToString()));
+            reader.Close();
+            Close();
+
+            return result;
+        }
+
         // **** **** добавление разделов и категорий **** **** //
 
         // **** **** работа с объявлениями **** **** //
