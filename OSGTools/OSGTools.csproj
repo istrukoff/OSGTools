@@ -69,11 +69,12 @@
     <Compile Include="Objects\AvitoAdCategory.cs" />
     <Compile Include="Objects\AvitoAdSection.cs" />
     <Compile Include="Objects\AvitoData.cs" />
+    <Compile Include="Objects\AvitoTemplate.cs" />
     <Compile Include="Objects\Device.cs" />
     <Compile Include="Objects\FollowingData.cs" />
     <Compile Include="Objects\InstagramData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TextOnThePicture.cs" />
+    <Compile Include="TextOnPicture.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="NLog.config">

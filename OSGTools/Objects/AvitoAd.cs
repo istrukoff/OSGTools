@@ -10,13 +10,14 @@ namespace OSGTools
     {
         public AvitoAd() { }
 
-        public AvitoAd(int p_id, int p_idlogin, string p_name, string p_price, string p_description, int p_status, int p_categoryid)
+        public AvitoAd(int p_id, int p_idlogin, string p_name, string p_description, string p_price, string p_size, int p_status, int p_categoryid)
         {
             id = p_id;
             idlogin = p_idlogin;
             name = p_name;
-            price = p_price;
             description = p_description;
+            price = p_price;
+            size = p_size;
             status = p_status;
             categoryid = p_categoryid;
         }
@@ -26,10 +27,12 @@ namespace OSGTools
         public int idlogin { get; set; } // идентификатор аккаунта
 
         public string name { get; set; } // заголовок объявления
+                
+        public string description { get; set; } // описание объявления
 
         public string price { get; set; } // указанная цена
 
-        public string description { get; set; } // описание объявления
+        public string size { get; set; } // указанный размер
 
         public int status { get; set; } // статус объявления
 

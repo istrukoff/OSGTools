@@ -10,12 +10,13 @@ namespace OSGTools
     {
         public AvitoAdCategory() { }
 
-        public AvitoAdCategory(int p_id, string p_category, string p_comment, int p_parent, int p_available)
+        public AvitoAdCategory(int p_id, string p_category, string p_comment, int p_parent, string p_parentname, int p_available)
         {
             id = p_id;
             category = p_category;
             comment = p_comment;
             parent = p_parent;
+            parentname = p_parentname;
             available = p_available;
         }
 
@@ -28,6 +29,8 @@ namespace OSGTools
         public DateTime lastupdate { get; set; }
 
         public int parent { get; set; }
+
+        public string parentname { get; set; }
 
         public int available { get; set; }
     }

@@ -2,6 +2,7 @@
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,12 +31,13 @@ namespace OSGTools
         public static MySqlConnection Connection { get { return connection; } }
         #endregion
 
+        // подключение к БД
         public static bool Connect()
         {
             bool result = true;
 
-            server = "ovz1.akolomiec.znog6.vps.myjino.ru";
-            port = 49283;
+            server = "81.177.140.105";
+            port = 3306;
             dbname = "accounts";
             user = "root";
             password = "KRUS56_ak+";
@@ -50,6 +52,7 @@ namespace OSGTools
             return result;
         }
 
+        // закрытие подключения к БД
         public static void Close()
         {
             connection.Close();
@@ -57,6 +60,7 @@ namespace OSGTools
 
         // **** **** **** **** avito **** **** **** **** //
 
+        // получить список аккаунтов авито
         public static List<AvitoData> getAvitoList()
         {
             List<AvitoData> result = new List<AvitoData>();
@@ -85,7 +89,7 @@ namespace OSGTools
             return result;
         }
 
-        // получить свободные аккаунты
+        // получить логины свободных аккаунтов
         public static List<string> getAllFreeAvitoAccounts()
         {
             List<string> result = new List<string>();
@@ -105,19 +109,54 @@ namespace OSGTools
             return result;
         }
 
+        // получить логины свободных аккаунтов с указанием города
+        public static List<string> getAllFreeAvitoAccounts(string city)
+        {
+            List<string> result = new List<string>();
+
+            Connect();
+            try
+            {
+                string cmdtext = string.Format("SELECT email FROM avito WHERE city='{0}' AND status=0 AND used=0;", city);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    result.Add(reader["email"].ToString());
+            }
+            catch { }
+            Close();
+
+            return result;
+        }
+
+        // установить статус занятости аккаунту
+        public static void setAvitoAccountUsed(string email, int used)
+        {
+            Connect();
+            try
+            {
+                string cmdtext = string.Format("UPDATE avito SET used = {1} WHERE email = '{0}';", email, used);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                cmd.ExecuteNonQuery();
+            }
+            catch { }
+            Close();
+        }
+
+        // получить данные выбранного аккаунта
         public static AvitoData getAvito(string email)
         {
             AvitoData result;
 
             Connect();
-            string cmdtext = string.Format("SELECT id, name, telephone, email, password, status, used FROM avito WHERE email='{0}';", email);
+            string cmdtext = string.Format("SELECT id, name, telephone, password, status, used FROM avito WHERE email='{0}';", email);
             MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
             MySqlDataReader reader = cmd.ExecuteReader();
             reader.Read();
             result = new AvitoData(int.Parse(reader["id"].ToString()),
                         reader["name"].ToString(),
                         reader["telephone"].ToString(),
-                        reader["email"].ToString(),
+                        email,
                         reader["password"].ToString(),
                         int.Parse(reader["status"].ToString()),
                         int.Parse(reader["used"].ToString()));
@@ -127,9 +166,243 @@ namespace OSGTools
             return result;
         }
 
-        // **** **** добавление разделов и категорий **** **** //
+        // **** **** шаблоны объявлений **** **** //
+        // получить список шаблонов по заданному идентификатору цели
+        public static List<AvitoTemplate> getAvitoTemplates(int target)
+        {
+            List<AvitoTemplate> result = new List<AvitoTemplate>();
 
-        // **** **** работа с объявлениями **** **** //
+            Connect();
+            string cmdtext = string.Format("SELECT id, name, description, price, size, picturespath, city FROM avito_templates WHERE target='{0}';", target);
+            MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+                result.Add(new AvitoTemplate(int.Parse(reader["id"].ToString()),
+                    target,
+                    reader["name"].ToString(),
+                    reader["description"].ToString(),
+                    reader["price"].ToString(),
+                    reader["size"].ToString(),
+                    reader["picturespath"].ToString(),
+                    reader["city"].ToString()));
+            reader.Close();
+            Close();
+
+            return result;
+        }
+
+        // получить список шаблонов по заданному идентификатору цели
+        public static List<AvitoTemplate> getAvitoTemplates(int target, string city)
+        {
+            List<AvitoTemplate> result = new List<AvitoTemplate>();
+
+            Connect();
+            string cmdtext = string.Format("SELECT id, name, description, price, size, picturespath, city FROM avito_templates WHERE target='{0}' AND city='{1}';", target, city);
+            MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+                result.Add(new AvitoTemplate(int.Parse(reader["id"].ToString()),
+                    target,
+                    reader["name"].ToString(),
+                    reader["description"].ToString(),
+                    reader["price"].ToString(),
+                    reader["size"].ToString(),
+                    reader["picturespath"].ToString(),
+                    reader["city"].ToString()));
+            reader.Close();
+            Close();
+
+            return result;
+        }
+
+        // **** **** разделы и категории **** **** //
+        // добавление или обновление категорий
+        public static bool upsertCategory(List<AvitoAdCategory> categories)
+        {
+            bool result = true;
+
+            Connect();
+            MySqlTransaction transaction = connection.BeginTransaction();
+
+            MySqlCommand cmd_1 = new MySqlCommand("UPDATE avito_categories SET available = 0;", connection, transaction);
+            cmd_1.ExecuteNonQuery();
+
+            foreach (AvitoAdCategory cat in categories)
+            {
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.Connection = connection;
+                cmd.Transaction = transaction;
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandText = "upsert_avito_category";
+                cmd.Parameters.AddWithValue("p_category", cat.category);
+                cmd.Parameters.AddWithValue("p_comment", cat.comment);
+                cmd.Parameters.AddWithValue("p_parent", cat.parent);
+                cmd.Parameters.AddWithValue("p_available", cat.available);
+                cmd.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+            Close();
+
+            return result;
+        }
+
+        // добавление или обновление категорий
+        public static bool upsertCategory(List<AvitoAdCategory> categories, bool withparentname)
+        {
+            bool result = true;
+
+            Connect();
+            MySqlTransaction transaction = connection.BeginTransaction();
+
+            //MySqlCommand cmd_1 = new MySqlCommand("UPDATE avito_categories SET available = 0;", connection, transaction);
+            //cmd_1.ExecuteNonQuery();
+
+            foreach (AvitoAdCategory cat in categories)
+            {
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.Connection = connection;
+                cmd.Transaction = transaction;
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandText = "upsert_avito_category2";
+                cmd.Parameters.AddWithValue("p_category", cat.category);
+                cmd.Parameters.AddWithValue("p_comment", cat.comment);
+                cmd.Parameters.AddWithValue("p_parentname", cat.parentname);
+                cmd.Parameters.AddWithValue("p_available", cat.available);
+                cmd.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+            Close();
+
+            return result;
+        }
+
+        // добавление или обновление разделов
+        public static bool upsertSection(List<AvitoAdSection> sections)
+        {
+            bool result = true;
+
+            Connect();
+            MySqlTransaction transaction = connection.BeginTransaction();
+
+            MySqlCommand cmd_1 = new MySqlCommand("UPDATE avito_sections SET available = 0;", connection, transaction);
+            cmd_1.ExecuteNonQuery();
+
+            foreach (AvitoAdSection section in sections)
+            {
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.Connection = connection;
+                cmd.Transaction = transaction;
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandText = "upsert_avito_section";
+                cmd.Parameters.AddWithValue("p_section", section.section);
+                cmd.Parameters.AddWithValue("p_comment", section.comment);
+                cmd.Parameters.AddWithValue("p_available", section.available);
+                cmd.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+            Close();
+
+            return result;
+        }
+
+        // поставить статус недоступности всем категориям
+        public static bool setCategoriesNotAvailable()
+        {
+            bool result = true;
+
+            Connect();
+            string cmdtext = string.Format("UPDATE avito_categories SET available = 0;");
+            MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+            cmd.ExecuteNonQuery();
+            Close();
+
+            return result;
+        }
+
+        // поставить статус недоступности всем разделам
+        public static bool setSectionsNotAvailable()
+        {
+            bool result = true;
+
+            Connect();
+            string cmdtext = string.Format("UPDATE avito_sections SET available = 0;");
+            MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+            cmd.ExecuteNonQuery();
+            Close();
+
+            return result;
+        }
+
+        // получить идентификатор категории по названию
+        public static int getCategoryID(string category)
+        {
+            int result;
+
+            Connect();
+            try
+            {
+                string cmdtext = string.Format("SELECT id FROM avito_categories WHERE category='{0}';", category);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                reader.Read();
+                result = int.Parse(reader["id"].ToString());
+            }
+            catch
+            {
+                result = -1;
+            }
+            Close();
+
+            return result;
+        }
+
+        // получить идентификатор категории по названию и названию родительской категории
+        public static int getCategoryID(string category, string parentname)
+        {
+            int result;
+
+            Connect();
+            try
+            {
+                string cmdtext = string.Format("SELECT id FROM avito_categories WHERE category='{0}' AND parentname='{1}';", category, parentname);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                reader.Read();
+                result = int.Parse(reader["id"].ToString());
+            }
+            catch
+            {
+                result = -1;
+            }
+            Close();
+
+            return result;
+        }
+
+        // **** **** объявления **** **** //
+        // добавление объявления
+        public static bool insertAvitoAd(AvitoAd ad)
+        {
+            bool result = true;
+
+            Connect();
+            string cmdtext = string.Format("INSERT INTO avito_ad (idlogin, name, description, price, size, status, categoryid) VALUES ({0}, '{1}', '{2}', '{3}', '{4}', {5}, {6});", 
+                ad.idlogin,
+                ad.name,
+                ad.description,
+                ad.price,
+                ad.size,
+                ad.status,
+                ad.categoryid);
+            MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+            cmd.ExecuteNonQuery();
+            Close();
+
+            return result;
+        }
 
         // **** **** **** **** instagram **** **** **** **** //
 
@@ -221,7 +494,7 @@ namespace OSGTools
             else
             {
                 Connect();
-                string cmdtext = string.Format("UPDATE instagram SET telephone='{1}', android_id='{2}', email='{3}', description='{4}', status=0, used=1 WHERE login='{0}'", login, telephone, android_id, email, description);
+                string cmdtext = string.Format("UPDATE instagram SET password='{1}', telephone='{2}', android_id='{3}', email='{4}', description='{5}', status = 0, used = 1 WHERE login = '{0}'", login, password, telephone, android_id, email, description);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
                 cmd.ExecuteNonQuery();
                 Close();
@@ -241,6 +514,48 @@ namespace OSGTools
             {
                 Connect();
                 string cmdtext = string.Format("UPDATE instagram SET email='{1}', website='{2}', name='{3}', description='{4}', filldate=now() WHERE id={0}", id, email, website, name, description);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                cmd.ExecuteNonQuery();
+                Close();
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        // обновление записи аккаунта после заполнения без указания email
+        public static bool updateInstagram(int id, string website, string name, string description)
+        {
+            bool result = true;
+
+            try
+            {
+                Connect();
+                string cmdtext = string.Format("UPDATE instagram SET website='{1}', name='{2}', description='{3}', filldate=now() WHERE id={0}", id, website, name, description);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                cmd.ExecuteNonQuery();
+                Close();
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        // обновление только адреса сайта
+        public static bool updateInstagram(int id, string website)
+        {
+            bool result = true;
+
+            try
+            {
+                Connect();
+                string cmdtext = string.Format("UPDATE instagram SET website='{1}', filldate=now() WHERE id={0}", id, website);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
                 cmd.ExecuteNonQuery();
                 Close();
