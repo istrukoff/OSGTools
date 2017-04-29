@@ -61,6 +61,7 @@
   <ItemGroup>
     <Compile Include="AccountsBase.cs" />
     <Compile Include="ADBBase.cs" />
+    <Compile Include="AndroidGallery.cs" />
     <Compile Include="DeviceIDChangerStart.cs" />
     <Compile Include="Functions.cs" />
     <Compile Include="InstaLogin.cs" />
@@ -73,8 +74,15 @@
     <Compile Include="Objects\Device.cs" />
     <Compile Include="Objects\FollowingData.cs" />
     <Compile Include="Objects\InstagramData.cs" />
+    <Compile Include="Objects\OKData.cs" />
+    <Compile Include="Objects\VKData.cs" />
+    <Compile Include="OKAccountsBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProxyDroidStart.cs" />
+    <Compile Include="Telephone.cs" />
     <Compile Include="TextOnPicture.cs" />
+    <Compile Include="VKAccountsBase.cs" />
+    <Compile Include="VKLogin.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="NLog.config">

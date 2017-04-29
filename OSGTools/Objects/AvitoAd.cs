@@ -10,7 +10,7 @@ namespace OSGTools
     {
         public AvitoAd() { }
 
-        public AvitoAd(int p_id, int p_idlogin, string p_name, string p_description, string p_price, string p_size, int p_status, int p_categoryid)
+        public AvitoAd(int p_id, int p_idlogin, string p_name, string p_description, string p_price, string p_size, int p_categoryid, string p_city, int p_status)
         {
             id = p_id;
             idlogin = p_idlogin;
@@ -18,8 +18,9 @@ namespace OSGTools
             description = p_description;
             price = p_price;
             size = p_size;
-            status = p_status;
             categoryid = p_categoryid;
+            city = p_city;
+            status = p_status;
         }
 
         public int id { get; set; } // идентификатор в БД

@@ -129,6 +129,28 @@ namespace OSGTools
             return result;
         }
 
+        // получить логины свободных аккаунтов с указанием города и количеству объявлений, размещённых за текущий день
+        public static List<string> getAllFreeAvitoAccounts(string city, int adscountperday)
+        {
+            List<string> result = new List<string>();
+
+            Connect();
+            try
+            {
+                string cmdtext = string.Format("SELECT email FROM avito WHERE city='{0}' AND ads_count(email)<={1} AND status=0 AND used=0;", 
+                    city, 
+                    adscountperday);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    result.Add(reader["email"].ToString());
+            }
+            catch { }
+            Close();
+
+            return result;
+        }
+
         // установить статус занятости аккаунту
         public static void setAvitoAccountUsed(string email, int used)
         {
@@ -389,14 +411,15 @@ namespace OSGTools
             bool result = true;
 
             Connect();
-            string cmdtext = string.Format("INSERT INTO avito_ad (idlogin, name, description, price, size, status, categoryid) VALUES ({0}, '{1}', '{2}', '{3}', '{4}', {5}, {6});", 
+            string cmdtext = string.Format("INSERT INTO avito_ads (idlogin, name, description, price, size, categoryid, city, publicationdate, status) VALUES ({0}, '{1}', '{2}', '{3}', '{4}', {5}, '{6}', now(), {7});", 
                 ad.idlogin,
                 ad.name,
                 ad.description,
                 ad.price,
                 ad.size,
-                ad.status,
-                ad.categoryid);
+                ad.categoryid,
+                ad.city,
+                ad.status);
             MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
             cmd.ExecuteNonQuery();
             Close();
@@ -494,7 +517,7 @@ namespace OSGTools
             else
             {
                 Connect();
-                string cmdtext = string.Format("UPDATE instagram SET password='{1}', telephone='{2}', android_id='{3}', email='{4}', description='{5}', status = 0, used = 1 WHERE login = '{0}'", login, password, telephone, android_id, email, description);
+                string cmdtext = string.Format("UPDATE instagram SET password='{1}', telephone='{2}', android_id='{3}', email='{4}', description='{5}', regdate=now(), status = 0, used = 1 WHERE login = '{0}'", login, password, telephone, android_id, email, description);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, connection);
                 cmd.ExecuteNonQuery();
                 Close();
