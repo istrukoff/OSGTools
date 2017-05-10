@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OSGTools
+namespace OSGTools.VK
 {
     public static class VKLogin
     {

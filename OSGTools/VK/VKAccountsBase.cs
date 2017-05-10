@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OSGTools
+namespace OSGTools.VK
 {
     public static class VKAccountsBase
     {
@@ -68,13 +68,37 @@ namespace OSGTools
             bool result = true;
 
             AccountsBase.Connect();
-            string cmdtext = string.Format("INSERT INTO vk (telephone, password, firstname, lastname, sex, android_id, regdate) VALUES ('{0}', '{1}', '{2}', '{3}', {4}, '{5}', now());",
+            string cmdtext = string.Format("INSERT INTO vk (telephone, password, user_id, firstname, lastname, sex, android_id, regdate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', {5}, '{6}', now());",
                 vk.Telephone,
                 vk.Password,
+                vk.User_id,
                 vk.FirstName,
                 vk.LastName,
                 vk.Sex,
                 vk.Android_id);
+            MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+            cmd.ExecuteNonQuery();
+            AccountsBase.Close();
+
+            return result;
+        }
+
+        // добавление аккаунта VK с указанием адреса прокси-сервера
+        public static bool insertVK(VKData vk, bool proxy)
+        {
+            bool result = true;
+
+            AccountsBase.Connect();
+            string cmdtext = string.Format("INSERT INTO vk (telephone, password, user_id, firstname, lastname, sex, android_id, regdate, proxyip, proxyport) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', {5}, '{6}', now(), '{7}', {8});",
+                vk.Telephone,
+                vk.Password,
+                vk.User_id,
+                vk.FirstName,
+                vk.LastName,
+                vk.Sex,
+                vk.Android_id,
+                vk.ProxyIP,
+                vk.ProxyPort);
             MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
             cmd.ExecuteNonQuery();
             AccountsBase.Close();

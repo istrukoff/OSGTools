@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace OSGTools
 {
-    public class VKData
+    public class FBData
     {
-        public VKData() { }
+        public FBData() { }
 
-        public VKData(int p_id, string p_telephone, string p_password, string p_android_id, string p_firstname, string p_lastname, int p_sex)
+        public FBData(int p_id, string p_telephone, string p_password, string p_android_id, string p_firstname, string p_lastname, int p_sex)
         {
             id = p_id;
             telephone = p_telephone;
@@ -42,6 +42,9 @@ namespace OSGTools
         private int sex;
         public int Sex { get { return sex; } set { sex = value; } }
 
+        private string birthday;
+        public string BirthDay { get { return birthday; } set { birthday = value; } }
+
         private string android_id;
         public string Android_id { get { return android_id; } set { android_id = value; } }
 
@@ -59,11 +62,5 @@ namespace OSGTools
 
         private string avatarfilename;
         public string AvatarFileName { get { return avatarfilename; } set { avatarfilename = value; } }
-
-        private string proxyip;
-        public string ProxyIP { get { return proxyip; } set { proxyip = value; } }
-
-        private int proxyport;
-        public int ProxyPort { get { return proxyport; } set { proxyport = value; } }
     }
 }

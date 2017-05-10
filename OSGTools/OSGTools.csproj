@@ -41,6 +41,9 @@
       <HintPath>..\packages\NLog.4.4.4\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="StringAnalizeLib">
+      <HintPath>..\..\StringAnalizeLib\StringAnalizeLib\bin\Debug\StringAnalizeLib.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -62,9 +65,17 @@
     <Compile Include="AccountsBase.cs" />
     <Compile Include="ADBBase.cs" />
     <Compile Include="AndroidGallery.cs" />
+    <Compile Include="Avito\AvitoAccountsBase.cs" />
     <Compile Include="DeviceIDChangerStart.cs" />
+    <Compile Include="Facebook\FBAccountsBase.cs" />
+    <Compile Include="Facebook\FBLogin.cs" />
+    <Compile Include="Facebook\FBActions.cs" />
+    <Compile Include="Facebook\FBSettings.cs" />
     <Compile Include="Functions.cs" />
-    <Compile Include="InstaLogin.cs" />
+    <Compile Include="Instagram\InstaAccountsBase.cs" />
+    <Compile Include="Instagram\InstaFBSettings.cs" />
+    <Compile Include="Instagram\InstaLogin.cs" />
+    <Compile Include="Instagram\InstaActions.cs" />
     <Compile Include="InternetCheckStart.cs" />
     <Compile Include="Objects\AvitoAd.cs" />
     <Compile Include="Objects\AvitoAdCategory.cs" />
@@ -72,17 +83,18 @@
     <Compile Include="Objects\AvitoData.cs" />
     <Compile Include="Objects\AvitoTemplate.cs" />
     <Compile Include="Objects\Device.cs" />
+    <Compile Include="Objects\FBData.cs" />
     <Compile Include="Objects\FollowingData.cs" />
     <Compile Include="Objects\InstagramData.cs" />
     <Compile Include="Objects\OKData.cs" />
     <Compile Include="Objects\VKData.cs" />
-    <Compile Include="OKAccountsBase.cs" />
+    <Compile Include="OK\OKAccountsBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProxyDroidStart.cs" />
     <Compile Include="Telephone.cs" />
     <Compile Include="TextOnPicture.cs" />
-    <Compile Include="VKAccountsBase.cs" />
-    <Compile Include="VKLogin.cs" />
+    <Compile Include="VK\VKAccountsBase.cs" />
+    <Compile Include="VK\VKLogin.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="NLog.config">
