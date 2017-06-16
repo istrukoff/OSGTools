@@ -37,7 +37,7 @@ namespace OSGTools
             }
             driver.FindElementByXPath("//android.widget.ImageButton[contains(@resource-id, 'floating_action_button')]").Click();
             Thread.Sleep(15000);
-            log.Info("Набираем указанный номер ussd.");
+            log.Info(string.Format("Набираем указанный номер ussd: {0}.", ussd));
             // набираем указанный номер ussd
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@resource-id, 'digits')]")));
             driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'digits')]").SendKeys(ussd);

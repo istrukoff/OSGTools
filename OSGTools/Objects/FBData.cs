@@ -62,5 +62,11 @@ namespace OSGTools
 
         private string avatarfilename;
         public string AvatarFileName { get { return avatarfilename; } set { avatarfilename = value; } }
+
+        private string proxyip;
+        public string ProxyIP { get { return proxyip; } set { proxyip = value; } }
+
+        private int proxyport;
+        public int ProxyPort { get { return proxyport; } set { proxyport = value; } }
     }
 }

@@ -125,7 +125,7 @@ namespace OSGTools.FB
             result.BirthDay = year.ToString();
             log.Info(string.Format("Выбираем год рождения: {0}.", result.BirthDay));
             // листаем до выбранного года
-            int year_index = default_year - year;
+            int year_index = default_year - year + 1;
             log.Info(string.Format("Листаем годы {0} раз.", year_index));
             for (int i = 1; i <= year_index; i++)
             {
@@ -196,9 +196,16 @@ namespace OSGTools.FB
             log.Info("Кликнули 'далее'.");
 
             // пропускаем добавление почты
-            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'secondary_button')]")));
-            driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'secondary_button')]").Click();
-            log.Info("Пропустили добавление почты.");
+            try
+            {
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'secondary_button')]")));
+                driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'secondary_button')]").Click();
+                log.Info("Пропустили добавление почты.");
+            }
+            catch
+            {
+                log.Error("Окно добавления почты не появилось.");
+            }
 
             // нажимаем "зарегистрироваться"
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'finish_button')]")));
@@ -206,14 +213,30 @@ namespace OSGTools.FB
             log.Info("Кликнули 'зарегистрироваться'.");
 
             // ожидание завершения регистрации
-            log.Info("Ожидание 20 секунд завершения регистрации и входа в аккаунт.");
-            Thread.Sleep(20000);
+            log.Info("Ожидание 30 секунд завершения регистрации и входа в аккаунт.");
+            Thread.Sleep(30000);
+
+            log.Info("Увеличиваем время ожидания до 1 минуты.");
+            wait.Timeout = new TimeSpan(0, 1, 0);
 
             // в окне сохранения пароля нажимаем "не сейчас"
-            log.Info("Отказ от сохранения пароля.");
-            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'button2')]")));
-            driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'button2')]").Click();
-            Thread.Sleep(1000);
+            try
+            {
+                log.Info("Отказ от сохранения пароля.");
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'button2')]")));
+                driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'button2')]").Click();
+                Thread.Sleep(1000);
+            }
+            catch
+            {
+                log.Error("Окно отказа от сохранения пароля не появилось. Ждём снова");
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'button2')]")));
+                driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'button2')]").Click();
+                Thread.Sleep(1000);
+            }
+
+            log.Info("Уменьшаем время ожидания до 30 секунд.");
+            wait.Timeout = new TimeSpan(0, 0, 30);
 
             // пропускаем добавление фото
             try
@@ -229,10 +252,17 @@ namespace OSGTools.FB
             }
 
             // нажимаем кнопку "готово"
-            log.Info("Кликаем 'готово'.");
-            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'primary_named_button')]")));
-            driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'primary_named_button')]").Click();
-            Thread.Sleep(1000);
+            try
+            {
+                log.Info("Кликаем 'готово'.");
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'primary_named_button')]")));
+                driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'primary_named_button')]").Click();
+                Thread.Sleep(1000);
+            }
+            catch
+            {
+                log.Error("Окно с кнопкой 'готово' не появилось.");
+            }
 
             // пропускаем добавление друзей
             try
@@ -338,9 +368,27 @@ namespace OSGTools.FB
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//com.facebook.fbui.widget.contentview.ContentView[contains(@content-desc, 'Ваш профиль')]")));
             driver.FindElementByXPath("//com.facebook.fbui.widget.contentview.ContentView[contains(@content-desc, 'Ваш профиль')]").Click();
 
+            log.Info("Закрываем окно с предложением заполнить профиль.");
+            try
+            {
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'pnux_modal_thanks_button')]")));
+                driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'pnux_modal_thanks_button')]").Click();
+            }
+            catch
+            {
+                log.Error("Не появилось окно с предложением заполнить профиль.");
+            }
+
             log.Info("Закрываем подсказку.");
-            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'fbui_tooltip_title')]")));
-            driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'fbui_tooltip_title')]").Click();
+            try
+            {
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'fbui_tooltip_title')]")));
+                driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'fbui_tooltip_title')]").Click();
+            }
+            catch
+            {
+                log.Error("Не появилось окно с подсказкой.");
+            }
 
             log.Info("Кликаем на кнопку 'дополнительно'.");
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.ImageButton[contains(@content-desc, 'Смотреть еще действия')]")));

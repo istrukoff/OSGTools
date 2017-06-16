@@ -37,6 +37,11 @@ namespace OSGTools.Insta
         private static List<string> listWebSites = new List<string>();
         private static StreamWriter writerWebSites;
 
+        // файл с "именами"
+        private static StreamReader readerNames;
+        private static List<string> listNames = new List<string>();
+        private static StreamWriter writerNames;
+
         // строка для записи в поле информации в Instagram
         private static StreamReader readerInstaInfo;
         #endregion
@@ -135,6 +140,41 @@ namespace OSGTools.Insta
             }
         }
 
+        // загрузить случайное "имя" из файла
+        private static string getRandomName(string path)
+        {
+            Random r = new Random();
+            string t = "";
+
+            using (readerNames = new StreamReader(path))
+            {
+                while (true)
+                {
+                    t = readerNames.ReadLine();
+                    if (t != null)
+                        listNames.Add(t);
+                    else
+                        break;
+                }
+            }
+
+            if (listNames.Count > 0)
+                return listNames[r.Next(0, listNames.Count)].ToString();
+            else
+                return "";
+        }
+
+        // удалить выбранное "имя" из файла
+        private static void removeNameFromFile(string path, string name)
+        {
+            using (writerNames = new StreamWriter(path, false))
+            {
+                foreach (string t in listNames)
+                    if (t != name)
+                        writerNames.WriteLine(t);
+            }
+        }
+
         // загрузить имя и описание из файла
         private static void getInstaInfo(string path, InstagramData insta)
         {
@@ -176,53 +216,38 @@ namespace OSGTools.Insta
             #region **** instagramreg ****
             wait.Timeout = new TimeSpan(0, 0, 30);
             Thread.Sleep(1000);
+
             string xml = driver.PageSource;
             string test_xml = "";
             int page = 0;
+
+            #region **** first variant ****
             test_xml = Regex.Match(xml, @"Войти как ").Value;
             if (test_xml != "")
             {
                 page = 1;
-                log.Info("Найдена надпись 'Войти как'."); try
+                log.Info(string.Format("{0} Найдена надпись 'Войти как'.", page));
+                try
                 {
                     wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'right_button')]")));
                     driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'right_button')]").Click();
-                    log.Info("Нажали 'зарегистрироваться'.");
+                    log.Info("Кликнули кнопку: 'Зарегистрироваться'.");
+
                 }
-                catch (WebDriverException e)
+                catch
                 {
-                    log.Info("Еще раз жмем регистрацию.");
+                    log.Info("Второй раз кликнули кнопку: 'Зарегистрироваться'.");
                     wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'right_button')]")));
                     driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'right_button')]").Click();
                 }
-            }
-
-            xml = driver.PageSource;
-            test_xml = Regex.Match(xml, @"Забыли").Value;
-            if (test_xml != "")
-            {
-                page = 2;
-                log.Info("Найдена надпись 'Забыли'.");
-
-                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Еще нет аккаунта? Зарегистрируйтесь.')]")));
-                driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Еще нет аккаунта? Зарегистрируйтесь.')]").Click();
-
-            }
-            Thread.Sleep(500);
-            xml = driver.PageSource;
-            test_xml = Regex.Match(xml, @"Зарегистрируйтесь, чтобы смотреть").Value;
-            if (test_xml != "")
-            {
-                page = 3;
-                log.Info("Найдена надпись 'зарегистрируйтесь, чтобы смотреть'.");
-                log.Info("Регистрация с электронным адресом или номером телефона.");
                 // регистрация с электронным адресом или номером телефона
                 try
                 {
+                    log.Info("Кликнули кнопку: 'Регистрация с электронным адресом или номером телефона'.");
                     wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]")));
                     driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]").Click();
                 }
-                catch (WebDriverException e)
+                catch
                 {
                     try
                     {
@@ -232,15 +257,62 @@ namespace OSGTools.Insta
                     catch
                     {
                         driver.PressKeyCode(AndroidKeyCode.Back);
-                        log.Info("Еще раз! Регистрация с электронным адресом или номером телефона.");
+                        log.Info("Второй раз кликнули кнопку: 'Регистрация с электронным адресом или номером телефона'.");
                         wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]")));
                         driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]").Click();
                     }
                 }
             }
+            #endregion
 
-            log.Info(string.Format("Вводим полученный номер телефона: {0}.", settings.telephone));
+            #region **** second variant ****
+            xml = driver.PageSource;
+            test_xml = Regex.Match(xml, @"Забыли").Value;
+            if (test_xml != "")
+            {
+                page = 2;
+                log.Info(string.Format("{0} Найдена надпись 'Забыли'.", page));
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Еще нет аккаунта? Зарегистрируйтесь.')]")));
+                driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Еще нет аккаунта? Зарегистрируйтесь.')]").Click();
+                log.Info("Кликнули кнопку: 'Еще нет аккаунта? Зарегистрируйтесь.'.");
+            }
+            #endregion
+
+            #region **** 3-rd variant ****
+            xml = driver.PageSource;
+            test_xml = Regex.Match(xml, @"Зарегистрируйтесь, чтобы смотреть").Value;
+            if (test_xml != "")
+            {
+                page = 3;
+                log.Info(string.Format("{0} Найдена надпись 'зарегистрируйтесь, чтобы смотреть'.", page));
+                // регистрация с электронным адресом или номером телефона
+                log.Info("Кликнули кнопку: 'Регистрация с электронным адресом или номером телефона'.");
+                try
+                {
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]")));
+                    driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]").Click();
+                }
+                catch
+                {
+                    try
+                    {
+                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'button_positive')]")));
+                        driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'button_positive')]").Click();
+                    }
+                    catch
+                    {
+                        driver.PressKeyCode(AndroidKeyCode.Back);
+                        log.Info("Второй раз кликнули кнопку: 'Регистрация с электронным адресом или номером телефона'.");
+                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]")));
+                        driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'sign_up_with_email_or_phone')]").Click();
+                    }
+                }
+            }
+            #endregion
+
             // вводим полученный номер телефона
+            #region **** phonenumber input ****
+            log.Info(string.Format("Вводим полученный номер телефона: {0}.", settings.telephone));
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@resource-id, 'phone_field')]")));
             driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'phone_field')]").SendKeys(settings.telephone);
             int i = 0;
@@ -262,10 +334,11 @@ namespace OSGTools.Insta
                 {
                     repeat_next = false;
                 }
-            } while (repeat_next);
+            }
+            while (repeat_next);
+            #endregion
 
-            //log.Info("Жмем Home.");
-            //driver.PressKeyCode(AndroidKeyCode.Home);
+            #region **** message with code ****
             log.Info("Получаем код подтверждения из сообщений. Ждём 20 + 60 секунд.");
             wait.Timeout = new TimeSpan(0, 1, 0);
             Thread.Sleep(20000);
@@ -300,6 +373,7 @@ namespace OSGTools.Insta
             driver.PressKeyCode(AndroidKeyCode.Keycode_APP_SWITCH);
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Instagram')]")));
             driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Instagram')]").Click();
+            #endregion
 
             // вводим код подтверждения
             try
@@ -307,6 +381,8 @@ namespace OSGTools.Insta
                 log.Info(string.Format("Вводим код подтверждения: {0}.", code));
                 wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@resource-id, 'confirmation_field')]")));
                 driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'confirmation_field')]").Click();
+
+                #region **** code input ****
                 switch (code[0])
                 {
                     case '0': driver.PressKeyCode(AndroidKeyCode.KeycodeNumpad_0); break;
@@ -390,16 +466,21 @@ namespace OSGTools.Insta
                     case '8': driver.PressKeyCode(AndroidKeyCode.KeycodeNumpad_8); break;
                     case '9': driver.PressKeyCode(AndroidKeyCode.KeycodeNumpad_9); break;
                 }
-                Thread.Sleep(500);
+                #endregion
+
+                Thread.Sleep(1000);
+
                 //wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@resource-id, 'confirmation_field')]")));
                 //driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'confirmation_field')]").SendKeys(code);
             }
             catch
             {
-                log.Error("Ошибка ввода кода подтверждения.");
-                return null;
+                //log.Error("Ошибка ввода кода подтверждения.");
+                log.Error("Аккаунт подтверждён автоматически.");
             }
 
+            // ввод основных данных аккаунта
+            #region **** name, password, login ****
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'next_button')]")));
             driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'next_button')]").Click();
             Thread.Sleep(1000);
@@ -422,15 +503,17 @@ namespace OSGTools.Insta
             log.Info("Завершаем регистрацию.");
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'continue_without_ci')]")));
             driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'continue_without_ci')]").Click();
+            #endregion
 
             // пропускаем добавление контактов и загрузку фотографии
+            #region **** other clicks ****
             try
             {
                 log.Info("Пропускаем добавление контактов и загрузку фотографии.");
                 wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'skip_button')]")));
                 driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'skip_button')]").Click();
             }
-            catch (WebDriverException e)
+            catch
             {
                 log.Info("Кнопка 'пропустить' не найдена.");
             }
@@ -441,10 +524,7 @@ namespace OSGTools.Insta
                 wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'button_negative')]")));
                 driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'button_negative')]").Click();
             }
-            catch
-            {
-
-            }
+            catch { }
 
             try
             {
@@ -452,36 +532,29 @@ namespace OSGTools.Insta
                 wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'skip_button')]")));
                 driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'skip_button')]").Click();
             }
-            catch
-            {
-
-            }
+            catch { }
             #endregion
-
-            log.Info(string.Format("Пишем в БД {0} {1} {2} {3}", insta.Login, insta.Password, insta.Telephone, insta.Android_id));
-            InstaAccountsBase.InstagramAdd(insta.Login, insta.Password, insta.Telephone, insta.Android_id, "", "");
-
-            using (StreamWriter account_file = new StreamWriter(string.Format("accounts.txt", insta.Login), true))
-                account_file.WriteLine(insta.Login);
+            #endregion
 
             return insta;
         }
 
+        // функция заполнения аккаунта
         [STAThread]
         public static bool Fill(AndroidDriver<IWebElement> driver, WebDriverWait wait, InstagramData insta, InstaFB.Settings settings)
         {
             bool result = false;
 
             #region **** inputs ****
-            log.Info(string.Format("Выбрали аккаунт: {0}", insta.Login));
+            log.Info(string.Format("Выбрали аккаунт: {0}.", insta.Login));
 
             // загрузка пароля учётной записи и идентификатора телефона из БД по заданному логину
             InstagramData insta_fromdb = InstaAccountsBase.getInstagram(insta.Login);
             insta.ID = insta_fromdb.ID;
             insta.Password = insta_fromdb.Password;
             insta.Android_id = insta_fromdb.Android_id;
-            log.Info(string.Format("Получили пароль аккаунта: {0}", insta.Password));
-            log.Info(string.Format("Загрузили идентификатор телефона: {0}", insta.Android_id));
+            log.Info(string.Format("Получили пароль аккаунта: {0}.", insta.Password));
+            log.Info(string.Format("Загрузили идентификатор телефона: {0}.", insta.Android_id));
             if (insta.Password == "")
             {
                 log.Error("Пароль аккаунта пустой.");
@@ -502,7 +575,7 @@ namespace OSGTools.Insta
                 insta.Email = getRandomEmail(settings.pathEmails);
                 if (insta.Email != "")
                     removeEmailFromFile(settings.pathEmails, insta.Email);
-                log.Info(string.Format("Выбрали электронный адрес: {0}", insta.Email));
+                log.Info(string.Format("Выбрали электронный адрес: {0}.", insta.Email));
             }
             else
             {
@@ -513,7 +586,7 @@ namespace OSGTools.Insta
             insta.WebSite = getRandomWebSite(settings.pathWebSites);
             if (insta.WebSite != "")
                 removeWebSiteFromFile(settings.pathWebSites, insta.WebSite);
-            log.Info(string.Format("Выбрали адрес сайта: {0}", insta.WebSite));
+            log.Info(string.Format("Выбрали адрес сайта: {0}.", insta.WebSite));
 
             // загрузка списка файлов для аватарки
             foreach (string f in Directory.GetFiles(settings.pathAvatars, "*.*", SearchOption.AllDirectories).Where(i => i.EndsWith(".jpg") || i.EndsWith(".jpeg") || i.EndsWith(".png")))
@@ -521,16 +594,28 @@ namespace OSGTools.Insta
             // выбираем одну случайную аватарку из списка
             Random r = new Random();
             insta.AvatarFileName = listOfAvatars[r.Next(listOfAvatars.Count - 1)];
-            log.Info(string.Format("Выбрали случайную аватарку: {0}", insta.AvatarFileName));
+            log.Info(string.Format("Выбрали случайную аватарку: {0}.", insta.AvatarFileName));
 
             // загружаем из файла описание для профиля
             getInstaInfo(settings.pathInstaInfo, insta);
-            log.Info(string.Format("Получили имя профиля: {0}", insta.Name));
-            log.Info(string.Format("Получили описание для профиля: {0}", insta.Description));
+            log.Info(string.Format("Получили имя профиля: {0}.", insta.Name));
+            log.Info(string.Format("Получили описание для профиля: {0}.", insta.Description));
+            // если "имя" пустое, то загружаем его из другого файла
+            if (insta.Name == "")
+            {
+                log.Info(string.Format("Получаем имя профиля из файла: {0}.", settings.pathNames));
+                insta.Name = getRandomName(settings.pathNames);
+                if (insta.Name != "")
+                {
+                    log.Info(string.Format("Получили имя профиля: {0}.", insta.Name));
+                    removeNameFromFile(settings.pathNames, insta.Name);
+                    log.Info("Удалили имя из файла.");
+                }
+            }
 
             // формирование имени файла для загрузки в телефон
             string filename = Functions.generateFileName(6, 12);
-            log.Info(string.Format("Сгенерировали имя файла для загрузки в телефон: {0}", filename));
+            log.Info(string.Format("Сгенерировали имя файла для загрузки в телефон: {0}.", filename));
             #endregion
 
             // **** загрузка выбранной аватарки на телефон **** //
@@ -674,6 +759,7 @@ namespace OSGTools.Insta
                 Thread.Sleep(1000);
                 log.Info("Фотография выбрана.");
                 // после выбора фотографии снова нажимаем кнопку "редактировать профиль"
+                wait.Timeout = new TimeSpan(0, 2, 0);
                 wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_edit_profile')]")));
                 driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_edit_profile')]").Click();
             }
@@ -682,6 +768,7 @@ namespace OSGTools.Insta
                 log.Error("Фотография не выбрана.");
             }
 
+            wait.Timeout = new TimeSpan(0, 0, 30);
             log.Info("Заполняем поле веб-сайта.");
             if (insta.WebSite != "")
             {
@@ -844,6 +931,7 @@ namespace OSGTools.Insta
             return result;
         }
 
+        // функция публикации постов
         [STAThread]
         public static bool Post2(AndroidDriver<IWebElement> driver, WebDriverWait wait, InstagramData insta, InstaFB.Settings settings)
         {
@@ -885,6 +973,13 @@ namespace OSGTools.Insta
             log.Info(string.Format("Загружаем список папок из каталога: {0}.", settings.pathPictures));
             foreach (string d in Directory.GetDirectories(settings.pathPictures, "*", SearchOption.TopDirectoryOnly))
                 listOfDirectories.Add(d);
+
+            if (listOfDirectories.Count <= 0)
+            {
+                log.Error("В указанном каталоге нет папок.");
+                return false;
+            }
+
             log.Info("Выбираем случайную папку.");
             Random rnd_dir = new Random();
             int dir = rnd_dir.Next(0, listOfDirectories.Count);
@@ -893,6 +988,13 @@ namespace OSGTools.Insta
             log.Info(string.Format("Загружаем список файлов из папки: {0}.", listOfDirectories[dir]));
             foreach (string f in Directory.GetFiles(listOfDirectories[dir], "*.*", SearchOption.TopDirectoryOnly).Where(i => i.EndsWith(".jpg") || i.EndsWith(".jpeg") || i.EndsWith(".png")))
                 listOfPictures.Add(f);
+
+            if (listOfPictures.Count <= 0)
+            {
+                log.Error("В указанной папке нет файлов.");
+                return false;
+            }
+
             log.Info(string.Format("Количество файлов: {0}", listOfPictures.Count));
 
             // загрузка изображений в папку телефона
@@ -1030,9 +1132,17 @@ namespace OSGTools.Insta
 
                 // **** сформировать текст для поста **** //
                 log.Info("Сформировать текст для поста.");
-                StringAnalize stringAnalize = new StringAnalize(postText);
-                parsed_posttext = stringAnalize.getParsedString();
-                log.Info(string.Format("Сформировали текст для поста: {0}.", parsed_posttext));
+                if (postText != "")
+                {
+                    StringAnalize stringAnalize = new StringAnalize(postText);
+                    parsed_posttext = stringAnalize.getParsedString();
+                    log.Info(string.Format("Сформировали текст для поста: {0}.", parsed_posttext));
+                }
+                else
+                {
+                    parsed_posttext = "";
+                    log.Info("Текст для поста пустой.");
+                }
 
                 // заполняем поле "добавьте подпись"
                 if (parsed_posttext != "")
@@ -1076,6 +1186,7 @@ namespace OSGTools.Insta
             return result;
         }
 
+        // функция публикации постов
         [STAThread]
         public static bool Post(AndroidDriver<IWebElement> driver, WebDriverWait wait, InstagramData insta, InstaFB.Settings settings)
         {
@@ -1331,6 +1442,7 @@ namespace OSGTools.Insta
             return result;
         }
 
+        // функция привязки аккаунта к аккаунту Facebook
         [STAThread]
         public static bool Bind(AndroidDriver<IWebElement> driver, WebDriverWait wait, FBData fb)
         {
@@ -1349,21 +1461,550 @@ namespace OSGTools.Insta
             driver.FindElementByXPath("//android.widget.ImageView[contains(@content-desc, 'Параметры')]").Click();
 
             // листаем
-            driver.Swipe(100, 700, 100, 150, 2000);
-            driver.Swipe(100, 700, 100, 150, 2000);
+            try
+            {
+                log.Info("Листаем вниз.");
+                driver.Swipe(100, 700, 100, 150, 2000);
+                driver.Swipe(100, 700, 100, 150, 2000);
+            }
+            catch
+            {
+                try
+                {
+                    log.Error("Ошибка листания. Листаем снова.");
+                    driver.Swipe(100, 700, 100, 150, 2000);
+                    driver.Swipe(100, 700, 100, 150, 2000);
+                }
+                catch
+                {
+                    log.Error("Ошибка листания.");
+                }
+            }
 
             // нажимаем "связанные аккаунты"
             log.Info("Нажимаем 'связанные аккаунты'.");
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Связанные аккаунты')]")));
             driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Связанные аккаунты')]").Click();
 
+            log.Info("Увеличиваем время ожидания до 1 минуты.");
+            wait.Timeout = new TimeSpan(0, 1, 0);
+
             // нажимаем "Facebook"
             log.Info("Выбираем 'Facebook'.");
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Facebook')]")));
             driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Facebook')]").Click();
-            Thread.Sleep(2000);
+            Thread.Sleep(5000);
+
+            // нажимаем "далее"
+            log.Info("Нажимаем 'далее'.");
+            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@content-desc, 'Далее')]")));
+            driver.FindElementByXPath("//android.widget.Button[contains(@content-desc, 'Далее')]").Click();
+            Thread.Sleep(5000);
+
+            // нажимаем "ок"
+            log.Info("Нажимаем 'ок'.");
+            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@content-desc, 'OK')]")));
+            driver.FindElementByXPath("//android.widget.Button[contains(@content-desc, 'OK')]").Click();
+            Thread.Sleep(5000);
+
+            log.Info("Уменьшаем время ожидания до 30 секунд.");
+            wait.Timeout = new TimeSpan(0, 0, 30);
 
             return result;
+        }
+
+        // преобразование строки количества в число
+        private static double getCountFromString(string value)
+        {
+            double result = 0;
+
+            if (value.Contains("k"))
+                result = double.Parse(value.Substring(0, value.Length - 1)) * 1000;
+            else
+                if (value.Contains("m"))
+                result = double.Parse(value.Substring(0, value.Length - 1)) * 1000000;
+            else
+                result = double.Parse(value.Substring(0, value.Length));
+
+            return result;
+        }
+
+        // функция подписки на указанный аккаунт
+        [STAThread]
+        public static string InstaFollowTo(AndroidDriver<IWebElement> driver, WebDriverWait wait, int instagram, string followto)
+        {
+            log.Info(string.Format("Подписка на аккаунт {0}", followto));
+            driver.StartActivity("com.instagram.android", ".activity.MainTabActivity");
+
+            wait.Timeout = new TimeSpan(0, 0, 30); // таймаут ожидания элемента = 30 секунд
+
+            FollowingData following = new FollowingData();
+            following.Login = followto;
+            bool isfollowingavailable = false;
+
+            string result = "";
+            string button_text = "";
+
+            log.Info(string.Format("Начинаем поиск: {0}.", followto));
+            log.Info("Ищем кнопку 'Поиск и интересное'.");
+            // нажимаем поиск
+            #region **** search button ****
+            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.FrameLayout[contains(@content-desc, 'Поиск и интересное')]")));
+            driver.FindElementByXPath("//android.widget.FrameLayout[contains(@content-desc, 'Поиск и интересное')]").Click();
+            // проверяем, действительно ли нажали поиск
+            try
+            {
+                log.Info("Ищем кнопку 'Найти'.");
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@text, 'Найти')]")));
+                button_text = driver.FindElementByXPath("//android.widget.EditText[contains(@text, 'Найти')]").Text;
+            }
+            catch
+            {
+                try
+                {
+                    // если случайно попали в добавление фото
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Фото')]")));
+                    button_text = driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Фото')]").Text;
+                    // то закрываем это окно
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.ImageView[contains(@resource-id, 'action_bar_cancel')]")));
+                    button_text = driver.FindElementByXPath("//android.widget.ImageView[contains(@resource-id, 'action_bar_cancel')]").Text;
+                    // и пробуем ещё раз нажать поиск
+                    log.Error("Не найдено поле для поиска. Пробуем еще раз нажать кнопку поиска.");
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.FrameLayout[contains(@content-desc, 'Поиск и интересное')]")));
+                    driver.FindElementByXPath("//android.widget.FrameLayout[contains(@content-desc, 'Поиск и интересное')]").Click();
+                    log.Info("Ищем кнопку 'Найти' второй раз.");
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@text, 'Найти')]")));
+                    button_text = driver.FindElementByXPath("//android.widget.EditText[contains(@text, 'Найти')]").Text;
+                }
+                catch
+                {
+                    result = "Кнопка 'Поиск и интересное' не найдена.";
+                    log.Error(result);
+                    return result;
+                }
+            }
+            #endregion
+
+            // вводим в поле поиска указанный аккаунт
+            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@resource-id, 'action_bar_search_edit_text')]")));
+            driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'action_bar_search_edit_text')]").SendKeys(followto);
+            // ждём секунду
+            Thread.Sleep(1000);
+            int no_results = 0;
+            // если получили сообщение, что результат не найден
+            try
+            {
+                no_results = driver.FindElementsByXPath("//android.widget.TextView[contains(@resource-id, 'row_no_results_textview')]").Count;
+            }
+            catch { }
+            if (no_results == 1)
+            {
+                result = "Результат не найден.";
+                log.Info(result);
+                return result;
+            }
+            else
+            {
+                try
+                {
+                    log.Info("Ждём появление элемента после поиска.");
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'row_search_user_username')]")));
+                    // проверяем, найден ли элемент
+                    try
+                    {
+                        driver.FindElementsByClassName("android.widget.TextView").First(f => f.Text == followto).Click();
+                        log.Info(string.Format("Жмём на найденный элемент: {0}.", followto));
+                    }
+                    catch (Exception e)
+                    {
+                        result = string.Format("Результат не найден. Есть похожие, например {0}.", driver.FindElementsByClassName("android.widget.TextView").First().Text);
+                        log.Error(result);
+                        log.Error(e.Message);
+                        return result;
+                    }
+
+                    // ждём появления кнопки 'подписаться'
+                    #region **** follow button ****
+                    try
+                    {
+                        // получаем текст кнопки
+                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_button_follow')]")));
+                        button_text = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_button_follow')]").Text;
+                        log.Info(string.Format("Текст кнопки: {0}.", button_text));
+
+                        isfollowingavailable = true;
+
+                        // считываем информацию
+                        #region **** get info ****
+                        log.Info("Считываем информацию.");
+                        // имя
+                        log.Info("Получаем имя.");
+                        try
+                        {
+                            string t_name = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_textview_fullname')]").Text;
+                            log.Info(t_name);
+                            following.Name = t_name;
+                        }
+                        catch
+                        {
+                            log.Error("Имя аккаунта пустое.");
+                            following.Name = "";
+                        }
+
+                        // описание
+                        log.Info("Получаем описание.");
+                        try
+                        {
+                            string t_description = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_textview_biography')]").Text;
+                            log.Info(t_description);
+                            following.Description = t_description;
+                        }
+                        catch
+                        {
+                            log.Error("Описание аккаунта пустое.");
+                            following.Description = "";
+                        }
+
+                        // сайт
+                        log.Info("Получаем адрес сайта.");
+                        try
+                        {
+                            string t_namewebsite = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_textview_website')]").Text;
+                            log.Info(t_namewebsite);
+                            following.WebSite = t_namewebsite;
+                        }
+                        catch
+                        {
+                            log.Error("Адрес сайта не указан.");
+                            following.WebSite = "";
+                        }
+
+                        // количество постов
+                        log.Info("Количество постов");
+                        try
+                        {
+                            string c_posts = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_textview_photos_count')]").Text;
+                            log.Info(c_posts);
+                            following.Countofposts = (int)getCountFromString(c_posts);
+                        }
+                        catch
+                        {
+                            log.Error("Количество постов недоступно.");
+                            following.Countofposts = -1;
+                        }
+
+                        // количество подписчиков
+                        log.Info("Количество подписчиков");
+                        try
+                        {
+                            string c_followers = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_textview_followers_count')]").Text;
+                            log.Info(c_followers);
+                            following.Countoffollowers = (int)getCountFromString(c_followers);
+                        }
+                        catch
+                        {
+                            log.Error("Количество подписчиков недоступно.");
+                            following.Countoffollowers = -1;
+                        }
+
+                        // количество подписок
+                        log.Info("Количество подписок");
+                        try
+                        {
+                            string c_following = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_textview_following_count')]").Text;
+                            log.Info(c_following);
+                            following.Countoffollowing = (int)getCountFromString(c_following);
+                        }
+                        catch
+                        {
+                            log.Error("Количество подписок недоступно.");
+                            following.Countoffollowing = -1;
+                        }
+                        #endregion
+
+                        // жмём кнопку 'подписаться'
+                        #region **** follow click ****
+                        log.Info(string.Format("Жмём кнопку 'подписаться': {0}", followto));
+                        driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_button_follow')]").Click();
+
+                        // если мы уже подписаны, то нажать кнопку отмены в появившемся окошке
+                        if ((button_text == "Подписки") || (button_text == "Запрошено"))
+                        {
+                            log.Info(string.Format("Аккаунт уже подписан на: {0}. Нажимаем отмену.", followto));
+                            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'button_negative')]")));
+                            driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'button_negative')]").Click();
+                        }
+                        else
+                        {
+                            // получаем текст нажатой кнопки
+                            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_button_follow')]")));
+                            button_text = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_button_follow')]").Text;
+                            log.Info(string.Format("Текст кнопки после нажатия: {0}.", button_text));
+
+                            // если её текст не изменился, то пробуем нажать ещё раз
+                            if ((button_text != "Подписки") && (button_text != "Запрошено"))
+                            {
+                                log.Error("Кнопка не поменялась на 'Подписки' или 'Запрошено'");
+                                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_button_follow')]")));
+                                driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'row_profile_header_button_follow')]").Click();
+                                log.Info("Жмём ещё раз на неё.");
+                            }
+                        }
+
+                        log.Info(string.Format("Подписались: {0}", followto));
+                        #endregion
+
+                        // лайк фотографий
+                        #region **** liking ****
+                        // выбираем режим отображения постов
+                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.ImageView[contains(@resource-id, 'layout_button_group_view_switcher_button_list')]")));
+                        driver.FindElementByXPath("//android.widget.ImageView[contains(@resource-id, 'layout_button_group_view_switcher_button_list')]").Click();
+                        log.Info("Переключение режима отображения постов: списком.");
+
+                        // листаем
+                        Thread.Sleep(1000);
+                        try
+                        {
+                            log.Info("Листаем.");
+                            driver.Swipe(50, 600, 50, 150, 1000);
+                        }
+                        catch
+                        {
+                            log.Error("Ошибка листания.");
+                        }
+
+                        // листаем страницу и ставим лайки
+                        Random rnd_swipe = new Random();
+                        int countSwipe = rnd_swipe.Next(10, 20);
+                        log.Info(string.Format("Количество листаний: {0}.", countSwipe));
+
+                        for (int i = 1; i <= countSwipe; i++)
+                        {
+                            Random rnd = new Random();
+                            bool islike = Convert.ToBoolean(rnd.Next(0, 2));
+                            log.Info(string.Format("Лайк поста: {0}.", islike));
+
+                            wait.Timeout = new TimeSpan(0, 0, 10);
+                            if (islike)
+                            {
+                                try
+                                {
+                                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.ImageView[contains(@resource-id, 'row_feed_button_like')]")));
+                                    driver.FindElementByXPath("//android.widget.ImageView[contains(@resource-id, 'row_feed_button_like')]").Click();
+                                    log.Info(string.Format("Лайк поста."));
+                                    Thread.Sleep(4000);
+                                    try
+                                    {
+                                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'alertTitle') and contains(@text, 'Действие заблокировано')]")));
+                                        log.Info("Появилось окно 'Действие заблокировано'.");
+                                        driver.PressKeyCode(AndroidKeyCode.Back);
+                                    }
+                                    catch
+                                    {
+                                        log.Info("Окно 'Действие заблокировано' не появилось.");
+                                    }
+                                }
+                                catch
+                                {
+                                    log.Error("Ошибка лайка.");
+                                }
+                            }
+
+                            // листаем
+                            Thread.Sleep(1000);
+                            try
+                            {
+                                log.Info("Листаем.");
+                                driver.Swipe(50, 600, 50, 150, 1000);
+                            }
+                            catch
+                            {
+                                log.Error("Ошибка листания.");
+                            }
+                        }
+                        #endregion
+                    }
+                    catch
+                    {
+                        result = "Не найдена кнопка 'подписаться'.";
+                        log.Error(result);
+                        return result;
+                    }
+                    #endregion
+                }
+                catch
+                {
+                    isfollowingavailable = false;
+                    log.Info(string.Format("Пользователь {0} не найден", followto));
+                    result = "Результат не найден.";
+                    log.Info(result);
+                    return result;
+                }
+            }
+
+            // запись подписки в БД
+            #region **** following db insert ****
+            if (isfollowingavailable)
+            {
+                result = "Подписка завершена.";
+                log.Info(string.Format("Запись в БД following: {0}.", following.Login));
+                // записываем в БД
+                if (InstaAccountsBase.insertFollowing(instagram,
+                    following.Login,
+                    Regex.Replace(following.Name, Functions.osg_regex, " "),
+                    Regex.Replace(following.Description, Functions.osg_regex, " "),
+                    Regex.Replace(following.WebSite, Functions.osg_regex, " "),
+                    0,
+                    following.Countofposts,
+                    following.Countoffollowers,
+                    following.Countoffollowing))
+                {
+                    log.Info(string.Format("Записали в БД following: {0}.", following.Login));
+                }
+                else
+                {
+                    log.Error(string.Format("Ошибка записи в БД following: {0}.", following.Login));
+                }
+            }
+            #endregion
+
+            return result;
+        }
+
+        // функция листания страницы поиска
+        [STAThread]
+        public static void SearchPageView(AndroidDriver<IWebElement> driver, WebDriverWait wait, int maxCountSwipes, int maxSwipeSpeed, int minSwipeSpeed)
+        {
+            driver.PressKeyCode(AndroidKeyCode.Keycode_APP_SWITCH);
+            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Instagram')]")));
+            driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Instagram')]").Click();
+            Thread.Sleep(1000);
+
+            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.FrameLayout[contains(@content-desc, 'Поиск и интересное')]")));
+            driver.FindElementByXPath("//android.widget.FrameLayout[contains(@content-desc, 'Поиск и интересное')]").Click();
+            log.Info("Нажали 'Поиск и интересное'.");
+
+            Random rnd_swipe = new Random();
+            int countSwipe = rnd_swipe.Next(maxCountSwipes / 2, maxCountSwipes + 1);
+            log.Info(string.Format("Количество листаний: {0}.", countSwipe));
+
+            for (int i = 1; i <= countSwipe; i++)
+            {
+                log.Info(string.Format("Страница: {0}.", i));
+
+                // кликаем случайную фотографию
+                wait.Timeout = new TimeSpan(0, 0, 10);
+                int count_photo_rows = 5;
+                log.Info(string.Format("Количество строк с фотографиями: {0}.", count_photo_rows));
+                Random rnd = new Random();
+                for (int j = 2; j <= count_photo_rows; j++)
+                {
+                    int number_photo_click = rnd.Next(0, 4);
+                    if (number_photo_click > 0)
+                    {
+                        int photo_row = 4 * (i - 1) + j;
+
+                        log.Info(string.Format("Кликаем фото/видео {0} {1}.", photo_row, number_photo_click));
+
+                        try
+                        {
+                            string xpath2 = string.Format("//android.widget.ImageView[contains(@content-desc, 'Миниатюра') and contains(@content-desc, 'в строке {0}') and contains(@content-desc, 'столбца {1}')]",
+                                photo_row, number_photo_click);
+                            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath(xpath2)));
+                            driver.FindElementByXPath(xpath2).Click();
+
+                            log.Info("Удачный клик.");
+                            Thread.Sleep(1000);
+
+                            // подписались или нет
+                            #region **** follow ****
+                            Random rnd_like = new Random();
+                            bool isfollow = Convert.ToBoolean(rnd_like.Next(0, 2));
+
+                            wait.Timeout = new TimeSpan(0, 0, 10);
+                            if (isfollow)
+                            {
+                                try
+                                {
+                                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Подписаться')]")));
+                                    driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Подписаться')]").Click();
+                                    log.Info("Подписка.");
+                                    Thread.Sleep(4000);
+                                    try
+                                    {
+                                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'alertTitle') and contains(@text, 'Действие заблокировано')]")));
+                                        log.Info("Появилось окно 'Действие заблокировано'.");
+                                        driver.PressKeyCode(AndroidKeyCode.Back);
+                                        log.Info("Назад для его закрытия.");
+                                    }
+                                    catch
+                                    {
+                                        log.Info("Окно 'Действие заблокировано' не появилось.");
+                                    }
+                                }
+                                catch
+                                {
+                                    log.Error("Ошибка подписки.");
+                                }
+                            }
+                            #endregion
+
+                            // листнули
+                            log.Info("Листнули.");
+                            driver.Swipe(100, 700, 100, 650, 2000);
+
+                            // лайкнули или нет
+                            #region **** like ****
+                            bool islike = Convert.ToBoolean(rnd_like.Next(0, 2));
+
+                            wait.Timeout = new TimeSpan(0, 0, 10);
+                            if (islike)
+                            {
+                                try
+                                {
+                                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.ImageView[contains(@resource-id, 'row_feed_button_like')]")));
+                                    driver.FindElementByXPath("//android.widget.ImageView[contains(@resource-id, 'row_feed_button_like')]").Click();
+                                    log.Info("Лайк поста.");
+                                    Thread.Sleep(4000);
+                                    try
+                                    {
+                                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'alertTitle') and contains(@text, 'Действие заблокировано')]")));
+                                        log.Info("Появилось окно 'Действие заблокировано'.");
+                                        driver.PressKeyCode(AndroidKeyCode.Back);
+                                        log.Info("Назад для его закрытия.");
+                                    }
+                                    catch
+                                    {
+                                        log.Info("Окно 'Действие заблокировано' не появилось.");
+                                    }
+                                }
+                                catch
+                                {
+                                    log.Error("Ошибка лайка.");
+                                }
+                            }
+                            #endregion
+
+                            // назад
+                            Thread.Sleep(2000);
+                            log.Info("Назад.");
+                            driver.PressKeyCode(AndroidKeyCode.Back);
+                        }
+                        catch
+                        {
+                            log.Info("Неудачный клик.");
+                        }
+                    }
+                }
+
+                // выбираем случайную скорость листания
+                Random rnd_swipe_speed = new Random();
+                int swipeSpeed = (rnd_swipe_speed.Next(maxSwipeSpeed, minSwipeSpeed + 1) / 100) * 100;
+                log.Info(string.Format("Скорость листания: {0}.", swipeSpeed));
+                // листаем
+                Thread.Sleep(2000);
+                driver.Swipe(100, 700, 100, 200, swipeSpeed);
+            }
         }
     }
 }

@@ -22,7 +22,7 @@ namespace OSGTools.Insta
             bool result = true;
             string status = "";
 
-            log.Info(string.Format("Запуск задачи: запуск Instagram для авторизации аккаунта {0}.", login));
+            log.Info(string.Format("Запуск Instagram для авторизации аккаунта {0}.", login));
             driver.StartActivity("com.instagram.android", ".activity.MainTabActivity");
 
             // проверяем на наличие доступного аккаунта для входа
@@ -222,7 +222,6 @@ namespace OSGTools.Insta
         {
             bool result = true;
 
-            log.Info(string.Format("Запуск задачи: {0}", "запуск Instagram для выхода из аккаунта"));
             driver.StartActivity("com.instagram.android", ".activity.MainTabActivity");
 
             // ждём загрузки 5 секунд
@@ -271,7 +270,7 @@ namespace OSGTools.Insta
 
                     log.Info("Нажали кнопку параметры");
                 }
-                catch (WebDriverException e)
+                catch
                 {
                     log.Info("Не нашли кнопку Профиль или Параметры, жмем еще раз профиль и ищем параметры");
                     wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.FrameLayout[contains(@content-desc, 'Профиль')]")));
@@ -364,8 +363,8 @@ namespace OSGTools.Insta
             driver.StartActivity("com.android.mms", ".ui.ConversationList");
             try
             {
-                //wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'subject') and contains(@text, 'Kod')]")));
-                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'subject')]")));
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'subject') and contains(@text, 'K')]")));
+                //wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'subject')]")));
                 log.Info("Пришло сообщение.");
             }
             catch (WebDriverException e)
@@ -374,7 +373,9 @@ namespace OSGTools.Insta
                 log.Error(e.ToString());
                 return false;
             }
-            string t_code = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'subject')]").Text;
+
+            //string t_code = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'subject')]").Text;
+            string t_code = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'subject') and contains(@text, 'K')]").Text;
             log.Info(string.Format("Получили сообщение: {0}.", t_code));
             // берём шесть цифр из сообщения
             code = Regex.Match(t_code, @"\d\d\d \d\d\d").Value;
@@ -382,6 +383,7 @@ namespace OSGTools.Insta
             log.Info(string.Format("Получили код подтверждения из сообщения: {0}.", code));
 
             // удаляем все сообщения после получения
+            wait.Timeout = new TimeSpan(0, 0, 10);
             log.Info("Удаляем все сообщения после получения.");
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.ImageButton[contains(@content-desc, 'Ещё')]")));
             driver.FindElementByXPath("//android.widget.ImageButton[contains(@content-desc, 'Ещё')]").Click();
@@ -390,27 +392,45 @@ namespace OSGTools.Insta
             wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'button1')]")));
             driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'button1')]").Click();
 
-            // возвращаемся в инстаграм
-            driver.StartActivity("com.instagram.android", ".activity.MainTabActivity");
+            // возвращаемся в Инстаграм
+            //driver.StartActivity("com.instagram.android", ".activity.MainTabActivity");
+            log.Info("Возвращаемся в Instagram.");
+            driver.PressKeyCode(AndroidKeyCode.Keycode_APP_SWITCH);
+            wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Instagram')]")));
+            driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Instagram')]").Click();
             Thread.Sleep(1000);
 
+            wait.Timeout = new TimeSpan(0, 0, 10);
             if (code != "")
             {
-                // возможно появление двух разных окон
-                // 1: с кнопкой 'Подтвердить аккаунт'
+                // вводим полученный код
+                // возможно появление поля ввода без resource-id
                 try
                 {
-                    // вводим полученный код
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@index, '0')]")));
+                    driver.FindElementByXPath("//android.widget.EditText[contains(@index, '0')]").Click();
+                    log.Info("Вводим полученный код.");
+                    driver.FindElementByXPath("//android.widget.EditText[contains(@index, '0')]").SendKeys(code);
+                }
+                catch
+                {
                     wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@resource-id, 'id_security_code')]")));
-                    log.Info("Окно с кнопкой 'Подтвердить аккаунт'.");
-                    driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'id_security_code')]").Clear();
                     driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'id_security_code')]").Click();
                     log.Info("Вводим полученный код.");
                     driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'id_security_code')]").SendKeys(code);
-                    // нажимаем кнопку подтверждения аккаунта
-                    log.Info("Нажимаем кнопку подтверждения аккаунта.");
-                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'verify_account')]")));
-                    driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'verify_account')]").Click();
+                }
+
+                // нажимаем кнопку подтверждения аккаунта
+                // возможно появление двух разных кнопок подтверждения
+                // 1: с кнопкой 'Подтвердить аккаунт'
+                log.Info("Нажимаем кнопку подтверждения аккаунта.");
+                try
+                {
+                    //wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'verify_account')]")));
+                    //driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'verify_account')]").Click();
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@content-desc, 'Подтвердить аккаунт')]")));
+                    driver.FindElementByXPath("//android.widget.Button[contains(@content-desc, 'Подтвердить аккаунт')]").Click();
+                    log.Info("Окно с кнопкой 'Подтвердить аккаунт'.");
                 }
                 catch
                 {
@@ -419,21 +439,40 @@ namespace OSGTools.Insta
                 // 2: с кнопкой 'Отправить'
                 try
                 {
-                    // вводим полученный код
-                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.EditText[contains(@resource-id, 'id_response_code')]")));
-                    log.Info("Окно с кнопкой 'Отправить'.");
-                    driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'id_response_code')]").Clear();
-                    driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'id_response_code')]").Click();
-                    log.Info("Вводим полученный код.");
-                    driver.FindElementByXPath("//android.widget.EditText[contains(@resource-id, 'id_security_code')]").SendKeys(code);
-                    // нажимаем кнопку подтверждения аккаунта
-                    log.Info("Нажимаем кнопку подтверждения аккаунта.");
                     wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@content-desc, 'Отправить')]")));
                     driver.FindElementByXPath("//android.widget.Button[contains(@content-desc, 'Отправить')]").Click();
+                    log.Info("Окно с кнопкой 'Отправить'.");
                 }
                 catch
                 {
                     log.Info("Нет окна с кнопкой 'Отправить'.");
+                }
+                // после подтверждения возможно появление окна с ошибкой сети
+                wait.Timeout = new TimeSpan(0, 0, 5);
+                try
+                {
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.CheckBox[contains(@text, 'Неизвестная ошибка сети.')]")));
+                    log.Info("Появилось окно с ошибкой сети.");
+                    //wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Отклонить')]")));
+                    driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Отклонить')]").Click();
+                    log.Info("Закрыли окно с ошибкой сети.");
+                }
+                catch
+                {
+                    log.Info("Окно с ошибкой сети не появилось.");
+                }
+
+                wait.Timeout = new TimeSpan(0, 0, 5);
+                try
+                {
+                    // нажимаем кнопку входа
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@text, 'Вход')]")));
+                    driver.FindElementByXPath("//android.widget.TextView[contains(@text, 'Вход')]").Click();
+                    log.Info("Нажали кнопку входа.");
+                }
+                catch
+                {
+                    log.Error("Ошибка нажатия кнопки входа.");
                 }
             }
             else
@@ -442,6 +481,36 @@ namespace OSGTools.Insta
             }
 
             result = true;
+
+            return result;
+        }
+
+        // проверка, появилось ли окно подтверждения через электронную почту
+        public static bool isEmailWindowOpen(AndroidDriver<IWebElement> driver, WebDriverWait wait)
+        {
+            bool result = false;
+
+            wait.Timeout = new TimeSpan(0, 0, 5);
+            try
+            {
+                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'alertTitle') and contains(@text, 'Забыли пароль для аккаунта')]")));
+                log.Info("Появилось окно 'Забыли пароль для аккаунта'.");
+                result = true;
+                try
+                {
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.CheckBox[contains(@resource-id, 'message')]")));
+                    string message = driver.FindElementByXPath("//android.widget.CheckBox[contains(@resource-id, 'message')]").Text;
+                    log.Info(string.Format("{0}", message));
+                }
+                catch
+                {
+                    log.Error("Не удалось получить текст сообщения.");
+                }
+            }
+            catch
+            {
+                result = false;
+            }
 
             return result;
         }

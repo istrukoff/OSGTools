@@ -22,6 +22,20 @@ namespace OSGTools
             description = p_description;
         }
 
+        public InstagramData(int p_id, string p_login, string p_password, string p_telephone, string p_android_id, string p_email, string p_name, string p_description, string p_proxyip, int p_proxyport)
+        {
+            id = p_id;
+            login = p_login;
+            password = p_password;
+            telephone = p_telephone;
+            android_id = p_android_id;
+            email = p_email;
+            name = p_name;
+            description = p_description;
+            proxyip = p_proxyip;
+            proxyport = p_proxyport;
+        }
+
         private int id;
         public int ID { get { return id; } set { id = value; } }
 
@@ -51,5 +65,11 @@ namespace OSGTools
 
         private string avatarfilename;
         public string AvatarFileName { get { return avatarfilename; } set { avatarfilename = value; } }
+
+        private string proxyip;
+        public string ProxyIP { get { return proxyip; } set { proxyip = value; } }
+
+        private int proxyport;
+        public int ProxyPort { get { return proxyport; } set { proxyport = value; } }
     }
 }

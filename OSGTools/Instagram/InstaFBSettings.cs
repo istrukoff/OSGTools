@@ -41,6 +41,8 @@ namespace OSGTools.InstaFB
 
         public string pathInstaInfo { get; set; }
 
+        public string pathNames { get; set; }
+
         public string pathPictures { get; set; }
 
         public string pathPostText { get; set; }
@@ -106,6 +108,8 @@ namespace OSGTools.InstaFB
                             result.pathWebSites = e.InnerText;
                         if (e.Name == "pathInstaInfo")
                             result.pathInstaInfo = e.InnerText;
+                        if (e.Name == "pathInstaNames")
+                            result.pathNames = e.InnerText;
                         if (e.Name == "pathPictures")
                             result.pathPictures = e.InnerText;
                         if (e.Name == "pathPostText")

@@ -57,14 +57,37 @@ namespace OSGTools
                 }
 
                 // нажимаем на кнопку проверки доступа в интернет
+                log.Info("Кликаем на кнопку проверки доступа в интернет.");
                 wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'btn_checkInet')]")));
                 driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'btn_checkInet')]").Click();
 
                 Thread.Sleep(2000);
 
                 // получаем сообщение о результате проверки
-                wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'message')]")));
-                string inetConnAlert = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'message')]").Text;
+                string inetConnAlert = "";
+                try
+                {
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'message')]")));
+                    inetConnAlert = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'message')]").Text;
+                    log.Info("Получили сообщение о результате проверки.");
+                }
+                catch
+                {
+                    log.Error("Не получили сообщение о результате проверки. Снова кликаем кнопку.");
+                    wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Button[contains(@resource-id, 'btn_checkInet')]")));
+                    driver.FindElementByXPath("//android.widget.Button[contains(@resource-id, 'btn_checkInet')]").Click();
+                    try
+                    {
+                        wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.TextView[contains(@resource-id, 'message')]")));
+                        inetConnAlert = driver.FindElementByXPath("//android.widget.TextView[contains(@resource-id, 'message')]").Text;
+                        log.Info("Получили сообщение о результате проверки.");
+                    }
+                    catch
+                    {
+                        log.Error("Не получили сообщение о результате проверки.");
+                        inetConnAlert = noInetConnAlert;
+                    }
+                }
 
                 c++; // для следующей попытки проверки
 

@@ -74,6 +74,7 @@ namespace OSGTools
                 wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Switch[contains(@resource-id, 'switchWidget')]")));
                 driver.FindElementByXPath("//android.widget.Switch[contains(@resource-id, 'switchWidget')]").Click();
                 Thread.Sleep(1000);
+                log.Info("ProxyDroid включен.");
             }
             catch
             {
@@ -84,6 +85,7 @@ namespace OSGTools
                     wait.Until(ExpectedConditions.PresenceOfAllElementsLocatedBy(By.XPath("//android.widget.Switch[contains(@resource-id, 'switchWidget')]")));
                     driver.FindElementByXPath("//android.widget.Switch[contains(@resource-id, 'switchWidget')]").Click();
                     Thread.Sleep(1000);
+                    log.Info("ProxyDroid включен.");
                 }
                 catch
                 {

@@ -63,6 +63,32 @@ namespace OSGTools.Insta
             return result;
         }
 
+        // получить запись из таблицы instagram по заданному логину
+        public static InstagramData getInstagram(string login, bool withproxy)
+        {
+            InstagramData result;
+
+            AccountsBase.Connect();
+            string cmdtext = string.Format("SELECT id, login, password, telephone, android_id, email, name, description, proxyip, ifnull(proxyport, 0) as proxyport FROM instagram WHERE login='{0}';", login);
+            MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+            reader.Read();
+            result = new InstagramData(int.Parse(reader["id"].ToString()),
+                reader["login"].ToString(),
+                reader["password"].ToString(),
+                reader["telephone"].ToString(),
+                reader["android_id"].ToString(),
+                reader["email"].ToString(),
+                reader["name"].ToString(),
+                reader["description"].ToString(),
+                reader["proxyip"].ToString(),
+                int.Parse(reader["proxyport"].ToString()));
+            reader.Close();
+            AccountsBase.Close();
+
+            return result;
+        }
+
         // **** **** регистрация **** **** //
 
         // проверка существования записи по логину
@@ -81,7 +107,7 @@ namespace OSGTools.Insta
             return result;
         }
 
-        // добавление записи
+        // добавление аккаунта
         public static bool InstagramAdd(string login, string password, string telephone, string android_id, string email, string description)
         {
             bool result = true;
@@ -98,6 +124,60 @@ namespace OSGTools.Insta
             {
                 AccountsBase.Connect();
                 string cmdtext = string.Format("UPDATE instagram SET password='{1}', telephone='{2}', android_id='{3}', email='{4}', description='{5}', regdate=now(), status = 0, used = 1 WHERE login = '{0}'", login, password, telephone, android_id, email, description);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+                cmd.ExecuteNonQuery();
+                AccountsBase.Close();
+            }
+
+            return result;
+        }
+
+        // добавление аккаунта с указанием прокси
+        public static bool InstagramAdd(string login, string password, string telephone, string android_id, string email, string description, string proxyip, int proxyport)
+        {
+            bool result = true;
+
+            if (!InstagramLoginExists(login))
+            {
+                AccountsBase.Connect();
+                string cmdtext = string.Format("INSERT INTO instagram (login, password, telephone, android_id, email, name, description, regdate, status, used, proxyip, proxyport) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', now(), 0, 1, '{7}', {8})", 
+                    login, password, telephone, android_id, email, "", description, proxyip, proxyport);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+                cmd.ExecuteNonQuery();
+                AccountsBase.Close();
+            }
+            else
+            {
+                AccountsBase.Connect();
+                string cmdtext = string.Format("UPDATE instagram SET password='{1}', telephone='{2}', android_id='{3}', email='{4}', description='{5}', regdate=now(), status = 0, used = 1, proxyip='{6}', proxyport={7} WHERE login = '{0}'", 
+                    login, password, telephone, android_id, email, description, proxyip, proxyport);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+                cmd.ExecuteNonQuery();
+                AccountsBase.Close();
+            }
+
+            return result;
+        }
+
+        // добавление аккаунта с указанием прокси и связанного аккаунта Facebook
+        public static bool InstagramAdd(string login, string password, string telephone, string android_id, string email, string description, string proxyip, int proxyport, string facebook)
+        {
+            bool result = true;
+
+            if (!InstagramLoginExists(login))
+            {
+                AccountsBase.Connect();
+                string cmdtext = string.Format("INSERT INTO instagram (login, password, telephone, android_id, email, name, description, regdate, status, used, proxyip, proxyport, facebook) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', now(), 0, 1, '{7}', {8}, '{9}')",
+                    login, password, telephone, android_id, email, "", description, proxyip, proxyport, facebook);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+                cmd.ExecuteNonQuery();
+                AccountsBase.Close();
+            }
+            else
+            {
+                AccountsBase.Connect();
+                string cmdtext = string.Format("UPDATE instagram SET password='{1}', telephone='{2}', android_id='{3}', email='{4}', description='{5}', regdate=now(), status = 0, used = 1, proxyip='{6}', proxyport={7}, facebook='{8}' WHERE login = '{0}'",
+                    login, password, telephone, android_id, email, description, proxyip, proxyport, facebook);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
                 cmd.ExecuteNonQuery();
                 AccountsBase.Close();
@@ -456,6 +536,84 @@ namespace OSGTools.Insta
             {
                 AccountsBase.Connect();
                 string cmdtext = string.Format("UPDATE instagram SET status='{1}' WHERE id={0}", id, status);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+                cmd.ExecuteNonQuery();
+                AccountsBase.Close();
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        // получить список аккаунтов со статусом = -1
+        public static Dictionary<string, string> getBlockedAccounts()
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>();
+
+            AccountsBase.Connect();
+
+            string cmdtext = string.Format("SELECT login, telephone FROM instagram WHERE status = -1;");
+            MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                result.Add(reader["login"].ToString(), reader["telephone"].ToString());
+            }
+
+            AccountsBase.Close();
+
+            return result;
+        }
+
+        // получить следующее значение порта для прокси-сервера
+        public static string getProxyPortValue()
+        {
+            string result = "";
+
+            AccountsBase.Connect();
+            string cmdtext = string.Format("SELECT (MAX(proxyport) + 1) AS proxyportvalue FROM instagram;");
+            MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+            MySqlDataReader reader = cmd.ExecuteReader();
+            reader.Read();
+            result = reader["proxyportvalue"].ToString();
+            AccountsBase.Close();
+
+            return result;
+        }
+
+        // обновить IP-адрес и порт прокси-сервера для указанного аккаунта
+        public static bool setAccountProxy(int id, string proxyip, string proxyport)
+        {
+            bool result = true;
+
+            try
+            {
+                AccountsBase.Connect();
+                string cmdtext = string.Format("UPDATE instagram SET proxyip='{1}', proxyport={2} WHERE id={0};", id, proxyip, proxyport);
+                MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
+                cmd.ExecuteNonQuery();
+                AccountsBase.Close();
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        // обновить порт прокси-сервера для указанного аккаунта
+        public static bool setAccountProxyPort(int id, string proxyport)
+        {
+            bool result = true;
+
+            try
+            {
+                AccountsBase.Connect();
+                string cmdtext = string.Format("UPDATE instagram SET proxyport={1} WHERE id={0}", id, proxyport);
                 MySqlCommand cmd = new MySqlCommand(cmdtext, AccountsBase.Connection);
                 cmd.ExecuteNonQuery();
                 AccountsBase.Close();
